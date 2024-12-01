@@ -41,33 +41,50 @@ async function totalBalance(id) {
     });
 }
 
+async function protocolBalance(id, protocolId) {
+  return debankFetch(`/v1/user/protocol?id=${id}&protocol_id=${protocolId}`)
+    .then(res => res.portfolio_item_list[0].stats);
+}
+
 class Row {
   constructor({ name, amount, date }) {
     this.name = name;
     this.amount = amount;
     this.date = date || new Date();
   }
-}
 
-async function addRow(row) {
-  return notionClient.pages.create({
-    parent: {
-      database_id: process.env.NOTION_DATABASE_ID,
-    },
-    properties: {
-      "Name": {
-        "title": [{
-          "text": { "content": row.name },
-        }],
+  async publish() {
+    if (process.env.NODE_ENV == 'development') {
+      return this.print();
+    } else {
+      return this.publishToNotion();
+    }
+  }
+
+  async print() {
+    console.log(this.name, this.amount, this.date);
+  }
+
+  async publishToNotion() {
+    return notionClient.pages.create({
+      parent: {
+        database_id: process.env.NOTION_DATABASE_ID,
       },
-      "USD": {
-        "number": row.amount,
+      properties: {
+        "Name": {
+          "title": [{
+            "text": { "content": this.name },
+          }],
+        },
+        "USD": {
+          "number": this.amount,
+        },
+        "Date": {
+          "date": { "start": this.date.toISOString().split('T')[0] },
+        },
       },
-      "Date": {
-        "date": { "start": row.date.toISOString().split('T')[0] },
-      },
-    },
-  });
+    });
+  }
 }
 
 async function main() {
@@ -77,16 +94,21 @@ async function main() {
     `Total: ${portfolio.total_usd_value.toFixed(2)} USD`,
     '',
   ];
-  await addRow(new Row({ name: 'Total', amount: portfolio.total_usd_value }));
+  const row = new Row({ name: 'Total', amount: portfolio.total_usd_value });
+  await row.publish();
   
-  portfolio.chain_list.slice(0, 5).forEach(chain => {
+  portfolio.chain_list.slice(0, 5).forEach(async (chain) => {
     lines.push(`${chain.name}: ${chain.usd_value.toFixed(2)} USD`);
-    addRow(new Row({ name: chain.name, amount: chain.usd_value }));
+    const row = new Row({ name: chain.name, amount: chain.usd_value });
+    await row.publish();
   });
 
   console.log(lines);
-
   await notify(lines.join('\n'));
+  
+  const resolv = await protocolBalance(process.env.WALLET_ADDRESS, 'resolv');
+  const resolvRow = new Row({ name: 'Resolv', amount: resolv.net_usd_value });
+  await resolvRow.publish();
 }
 
 discord.once('ready', async () => {
