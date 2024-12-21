@@ -47,13 +47,17 @@ async function protocolBalance(id, protocolId) {
 }
 
 class Row {
-  constructor({ name, usd, date }) {
+  constructor({ name, usd, eth, date }) {
     this.name = name;
     this.usd = usd;
+    this.eth = eth;
     this.date = date || new Date();
   }
 
   renderLine() {
+    if (this.eth !== undefined) {
+      return `${this.name}: ${this.eth.toFixed(6)} ETH`;
+    }
     return `${this.name}: ${this.usd.toFixed(2)} USD`;
   }
 
