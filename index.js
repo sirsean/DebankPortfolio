@@ -53,6 +53,10 @@ class Row {
     this.date = date || new Date();
   }
 
+  renderLine() {
+    return `${this.name}: ${this.amount.toFixed(2)} USD`;
+  }
+
   async publish() {
     if (process.env.NODE_ENV == 'development') {
       return this.print();
@@ -90,25 +94,29 @@ class Row {
 async function main() {
   const portfolio = await totalBalance(process.env.WALLET_ADDRESS);
 
-  const lines = [
-    `Total: ${portfolio.total_usd_value.toFixed(2)} USD`,
-    '',
-  ];
+  const lines = [];
+  
   const row = new Row({ name: 'Total', amount: portfolio.total_usd_value });
+  lines.push(row.renderLine());
   await row.publish();
+
+  lines.push('');
   
   portfolio.chain_list.slice(0, 5).forEach(async (chain) => {
-    lines.push(`${chain.name}: ${chain.usd_value.toFixed(2)} USD`);
     const row = new Row({ name: chain.name, amount: chain.usd_value });
+    lines.push(row.renderLine());
     await row.publish();
   });
+  
+  lines.push('');
+
+  const resolv = await protocolBalance(process.env.WALLET_ADDRESS, 'resolv');
+  const resolvRow = new Row({ name: 'Resolv', amount: resolv.net_usd_value });
+  lines.push(resolvRow.renderLine());
+  await resolvRow.publish();
 
   console.log(lines);
   await notify(lines.join('\n'));
-  
-  const resolv = await protocolBalance(process.env.WALLET_ADDRESS, 'resolv');
-  const resolvRow = new Row({ name: 'Resolv', amount: resolv.net_usd_value });
-  await resolvRow.publish();
 }
 
 discord.once('ready', async () => {
