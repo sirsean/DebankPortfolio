@@ -57,8 +57,9 @@ class Row {
   renderLine() {
     if (this.eth !== undefined) {
       return `${this.name}: ${this.eth.toFixed(6)} ETH`;
+    } else {
+      return `${this.name}: ${this.usd.toFixed(2)} USD`;
     }
-    return `${this.name}: ${this.usd.toFixed(2)} USD`;
   }
 
   async publish() {
@@ -70,7 +71,14 @@ class Row {
   }
 
   async print() {
-    console.log(this.name, this.usd, this.date);
+    const values = [];
+    if (this.usd !== undefined) {
+      values.push(`${this.usd} USD`);
+    }
+    if (this.eth !== undefined) {
+      values.push(`${this.eth} ETH`);
+    }
+    console.log(this.name, values.join(', '), this.date);
   }
 
   async publishToNotion() {
@@ -99,19 +107,19 @@ async function main() {
   const portfolio = await totalBalance(process.env.WALLET_ADDRESS);
 
   const lines = [];
-  
+
   const row = new Row({ name: 'Total', usd: portfolio.total_usd_value });
   lines.push(row.renderLine());
   await row.publish();
 
   lines.push('');
-  
+
   portfolio.chain_list.slice(0, 5).forEach(async (chain) => {
     const row = new Row({ name: chain.name, usd: chain.usd_value });
     lines.push(row.renderLine());
     await row.publish();
   });
-  
+
   lines.push('');
 
   const resolv = await protocolBalance(process.env.WALLET_ADDRESS, 'resolv');
