@@ -47,14 +47,14 @@ async function protocolBalance(id, protocolId) {
 }
 
 class Row {
-  constructor({ name, amount, date }) {
+  constructor({ name, usd, date }) {
     this.name = name;
-    this.amount = amount;
+    this.usd = usd;
     this.date = date || new Date();
   }
 
   renderLine() {
-    return `${this.name}: ${this.amount.toFixed(2)} USD`;
+    return `${this.name}: ${this.usd.toFixed(2)} USD`;
   }
 
   async publish() {
@@ -66,7 +66,7 @@ class Row {
   }
 
   async print() {
-    console.log(this.name, this.amount, this.date);
+    console.log(this.name, this.usd, this.date);
   }
 
   async publishToNotion() {
@@ -81,7 +81,7 @@ class Row {
           }],
         },
         "USD": {
-          "number": this.amount,
+          "number": this.usd,
         },
         "Date": {
           "date": { "start": this.date.toISOString().split('T')[0] },
@@ -96,14 +96,14 @@ async function main() {
 
   const lines = [];
   
-  const row = new Row({ name: 'Total', amount: portfolio.total_usd_value });
+  const row = new Row({ name: 'Total', usd: portfolio.total_usd_value });
   lines.push(row.renderLine());
   await row.publish();
 
   lines.push('');
   
   portfolio.chain_list.slice(0, 5).forEach(async (chain) => {
-    const row = new Row({ name: chain.name, amount: chain.usd_value });
+    const row = new Row({ name: chain.name, usd: chain.usd_value });
     lines.push(row.renderLine());
     await row.publish();
   });
@@ -111,7 +111,7 @@ async function main() {
   lines.push('');
 
   const resolv = await protocolBalance(process.env.WALLET_ADDRESS, 'resolv');
-  const resolvRow = new Row({ name: 'Resolv', amount: resolv.net_usd_value });
+  const resolvRow = new Row({ name: 'Resolv', usd: resolv.net_usd_value });
   lines.push(resolvRow.renderLine());
   await resolvRow.publish();
 
