@@ -41,9 +41,29 @@ async function totalBalance(id) {
     });
 }
 
+async function protocolList(chainId) {
+  return debankFetch(`/v1/protocol/list?chain_id=${chainId}`)
+    .then(res => res);
+}
+
 async function protocolBalance(id, protocolId) {
   return debankFetch(`/v1/user/protocol?id=${id}&protocol_id=${protocolId}`)
-    .then(res => res.portfolio_item_list[0].stats);
+    .then(res => {
+      const usd = res.portfolio_item_list.reduce((acc, cur) => acc + cur.stats.net_usd_value, 0);
+      const eth = res.portfolio_item_list
+        .map(item => item.asset_token_list.filter(token => token.name == 'ETH').reduce((acc, cur) => acc + cur.amount, 0))
+        .reduce((acc, cur) => acc + cur, 0);
+      return { usd, eth };
+    });
+}
+
+function sumPortfolioBalances(balances) {
+  return balances.reduce((acc, cur) => {
+    return {
+      usd: acc.usd + cur.usd,
+      eth: acc.eth + cur.eth,
+    };
+  }, { usd: 0, eth: 0 });
 }
 
 class Row {
@@ -82,23 +102,29 @@ class Row {
   }
 
   async publishToNotion() {
+    const properties = {
+      "Name": {
+        "title": [{
+          "text": { "content": this.name },
+        }],
+      },
+      "USD": {
+        "number": this.usd,
+      },
+      "Date": {
+        "date": { "start": this.date.toISOString().split('T')[0] },
+      },
+    };
+    if (this.eth !== undefined) {
+      properties["ETH"] = {
+        "number": this.eth,
+      };
+    }
     return notionClient.pages.create({
       parent: {
         database_id: process.env.NOTION_DATABASE_ID,
       },
-      properties: {
-        "Name": {
-          "title": [{
-            "text": { "content": this.name },
-          }],
-        },
-        "USD": {
-          "number": this.usd,
-        },
-        "Date": {
-          "date": { "start": this.date.toISOString().split('T')[0] },
-        },
-      },
+      properties,
     });
   }
 }
@@ -123,9 +149,17 @@ async function main() {
   lines.push('');
 
   const resolv = await protocolBalance(process.env.WALLET_ADDRESS, 'resolv');
-  const resolvRow = new Row({ name: 'Resolv', usd: resolv.net_usd_value });
+  const resolvRow = new Row({ name: 'Resolv', usd: resolv.usd });
   lines.push(resolvRow.renderLine());
   await resolvRow.publish();
+
+  const tokemak = await Promise.all([
+    protocolBalance(process.env.WALLET_ADDRESS, 'tokemak'),
+    protocolBalance(process.env.WALLET_ADDRESS, 'base_tokemak'),
+  ]).then(sumPortfolioBalances);
+  const tokemakRow = new Row({ name: 'Tokemak', usd: tokemak.usd, eth: tokemak.eth });
+  lines.push(tokemakRow.renderLine());
+  await tokemakRow.publish();
 
   console.log(lines);
   await notify(lines.join('\n'));
