@@ -39,6 +39,14 @@ async function main() {
   lines.push(tokemakRow.renderLine());
   await tokemakRow.publish();
 
+  const morpho = await Promise.all([
+    protocolBalance(process.env.WALLET_ADDRESS, 'morpho'),
+    protocolBalance(process.env.WALLET_ADDRESS, 'base_morpho'),
+  ]).then(sumPortfolioBalances);
+  const morphoRow = new Row({ name: 'Morpho', usd: morpho.usd });
+  lines.push(morphoRow.renderLine());
+  await morphoRow.publish();
+
   console.log();
   await discordClient.notify(lines.join('\n'));
 }
