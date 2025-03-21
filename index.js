@@ -1,8 +1,6 @@
 import sortBy from 'sort-by';
-import * as notion from '@notionhq/client';
 import discordClient from './src/Discord.js';
-
-const notionClient = new notion.Client({ auth: process.env.NOTION_TOKEN });
+import { Row } from './src/Row.js';
 
 const DEBANK_API = 'https://pro-openapi.debank.com';
 
@@ -51,8 +49,6 @@ function sumPortfolioBalances(balances) {
   }, { usd: 0, eth: 0 });
 }
 
-import { Row } from './src/Row.js';
-
 async function main() {
   const discordInitialized = await discordClient.initialize();
   if (!discordInitialized) {
@@ -90,7 +86,7 @@ async function main() {
   lines.push(tokemakRow.renderLine());
   await tokemakRow.publish();
 
-  console.log(lines);
+  console.log();
   await discordClient.notify(lines.join('\n'));
 
   // need to do this to let the process end
