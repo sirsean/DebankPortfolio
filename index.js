@@ -50,4 +50,7 @@ async function main() {
 await main()
   .catch(e => {
     console.error(e);
+  })
+  .finally(() => {
+    discordClient.destroy();
   });
