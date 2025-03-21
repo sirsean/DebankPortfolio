@@ -1,10 +1,8 @@
 import sortBy from 'sort-by';
-import { notion } from '@notionhq/client';
-import { Discord } from './src/Discord.js';
+import * as notion from '@notionhq/client';
+import discordClient from './src/Discord.js';
 
 const notionClient = new notion.Client({ auth: process.env.NOTION_TOKEN });
-
-const discord = new Discord(process.env.DISCORD_APP_TOKEN, process.env.DISCORD_CHANNEL_ID);
 
 const DEBANK_API = 'https://pro-openapi.debank.com';
 
@@ -117,6 +115,11 @@ class Row {
 }
 
 async function main() {
+  const discordInitialized = await discordClient.initialize();
+  if (!discordInitialized) {
+    console.warn('Discord client failed to initialize. Notifications will be logged to console only.');
+  }
+  
   const portfolio = await totalBalance(process.env.WALLET_ADDRESS);
 
   const lines = [];
@@ -149,21 +152,14 @@ async function main() {
   await tokemakRow.publish();
 
   console.log(lines);
-  await discord.notify(lines.join('\n'));
-}
-
-discord.on('ready', async () => {
-  console.log(`Logged in as ${discord.user.tag}!`);
-
-  // run the program code
-  await main()
-    .catch(e => {
-      console.error(e);
-      discord.notify(e.message);
-    });
+  await discordClient.notify(lines.join('\n'));
 
   // need to do this to let the process end
-  discord.destroy();
-});
+  discordClient.destroy();
+}
 
-discord.on('error', console.error);
+// run the program code
+await main()
+  .catch(e => {
+    console.error(e);
+  });
