@@ -41,15 +41,13 @@ async function main() {
 
   console.log();
   await discordClient.notify(lines.join('\n'));
-
-  // need to do this to let the process end
-  discordClient.destroy();
 }
 
 // run the program code
 await main()
   .catch(e => {
     console.error(e);
+    discordClient.notify(e.message);
   })
   .finally(() => {
     discordClient.destroy();
