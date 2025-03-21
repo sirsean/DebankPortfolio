@@ -1,23 +1,10 @@
 import sortBy from 'sort-by';
-import { Client, GatewayIntentBits } from 'discord.js';
-import * as notion from '@notionhq/client';
+import { notion } from '@notionhq/client';
+import { Discord } from './src/Discord.js';
 
 const notionClient = new notion.Client({ auth: process.env.NOTION_TOKEN });
 
-const discord = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-  ],
-});
-
-async function notify(message) {
-  if (process.env.NODE_ENV == 'development') {
-    console.log(message);
-  } else {
-    await discord.channels.fetch(process.env.DISCORD_CHANNEL_ID)
-      .then(channel => channel.send(`\`\`\`>> Debank Portfolio\n===\n${message}\`\`\``));
-  }
-}
+const discord = new Discord(process.env.DISCORD_APP_TOKEN, process.env.DISCORD_CHANNEL_ID);
 
 const DEBANK_API = 'https://pro-openapi.debank.com';
 
@@ -162,17 +149,17 @@ async function main() {
   await tokemakRow.publish();
 
   console.log(lines);
-  await notify(lines.join('\n'));
+  await discord.notify(lines.join('\n'));
 }
 
-discord.once('ready', async () => {
+discord.on('ready', async () => {
   console.log(`Logged in as ${discord.user.tag}!`);
 
   // run the program code
   await main()
     .catch(e => {
       console.error(e);
-      notify(e.message);
+      discord.notify(e.message);
     });
 
   // need to do this to let the process end
@@ -180,5 +167,3 @@ discord.once('ready', async () => {
 });
 
 discord.on('error', console.error);
-
-await discord.login(process.env.DISCORD_APP_TOKEN);
