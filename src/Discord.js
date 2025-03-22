@@ -1,12 +1,18 @@
+
 import { Client, GatewayIntentBits } from 'discord.js';
 
 class Discord {
   constructor() {
     this.client = null;
+    this.appName = 'watchdog notifier';
   }
 
-  async initialize() {
+  async initialize(appName) {
     try {
+      if (appName) {
+        this.appName = appName;
+      }
+
       if (!process.env.DISCORD_APP_TOKEN) {
         console.error('DISCORD_APP_TOKEN is not set in environment variables');
         return false;
@@ -36,31 +42,29 @@ class Discord {
     }
 
     try {
-      // Check if Discord client is ready
       if (!this.client) {
         console.error('Discord client is not ready. Token may not be set.');
-        console.log(message); // Fallback to logging the message
+        console.log(message);
         return;
       }
 
-      // Verify token is set
       if (!process.env.DISCORD_APP_TOKEN) {
         console.error('DISCORD_APP_TOKEN is not set in environment variables');
-        console.log(message); // Fallback to logging the message
+        console.log(message);
         return;
       }
 
       const channel = await this.client.channels.fetch(process.env.DISCORD_CHANNEL_ID);
       if (!channel) {
         console.error(`Could not find Discord channel with ID: ${process.env.DISCORD_CHANNEL_ID}`);
-        console.log(message); // Fallback to logging the message
+        console.log(message);
         return;
       }
 
-      await channel.send(`\`\`\`>> DYAD Monitor\n===\n${message}\`\`\``);
+      await channel.send(`\`\`\`>> ${this.appName}\n===\n${message}\`\`\``);
     } catch (error) {
       console.error('Error sending Discord notification:', error.message);
-      console.log(message); // Fallback to logging the message
+      console.log(message);
     }
   }
 
@@ -81,6 +85,5 @@ class Discord {
   }
 }
 
-// Export a singleton instance
 const discordClient = new Discord();
 export default discordClient;

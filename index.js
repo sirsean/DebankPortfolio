@@ -3,7 +3,7 @@ import { Row } from './src/Row.js';
 import { totalBalance, protocolBalance, sumPortfolioBalances, protocolList } from './src/Debank.js';
 
 async function main() {
-  const discordInitialized = await discordClient.initialize();
+  const discordInitialized = await discordClient.initialize('Debank Portfolio');
   if (!discordInitialized) {
     console.warn('Discord client failed to initialize. Notifications will be logged to console only.');
   }
