@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import discordClient from './src/Discord.js';
 import { summaryCommand } from './src/commands/summary.js';
+import { searchCommand } from './src/commands/search.js';
 
 async function main() {
   const program = new Command();
@@ -14,6 +15,13 @@ async function main() {
     .command('summary')
     .description('Show portfolio summary')
     .action(summaryCommand);
+
+  program
+    .command('search')
+    .description('Search for protocols on a specific chain')
+    .argument('<chainId>', 'Chain ID to search on')
+    .argument('<name>', 'Protocol name to search for (regex)')
+    .action(searchCommand);
 
   await program.parseAsync();
 }
