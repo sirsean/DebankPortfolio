@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "summary": "node index.js summary"
+    "summary": "node index.js summary",
+    "search": "node index.js search"
   },
   "keywords": [],
   "author": "",
