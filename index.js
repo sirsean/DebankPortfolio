@@ -13,24 +13,22 @@ async function main() {
   program
     .command('summary')
     .description('Show portfolio summary')
-    .action(async () => {
-      await discordClient.initialize('Debank Portfolio')
-        .then(initialized => {
-          if (!initialized) {
-            console.warn('Discord client failed to initialize. Notifications will be logged to console only.');
-          }
-          return summaryCommand();
-        })
-        .catch(e => {
-          console.error(e);
-          discordClient.notify(e.message);
-        })
-        .finally(() => {
-          discordClient.destroy();
-        });
-    });
+    .action(summaryCommand);
 
   await program.parseAsync();
 }
 
-main();
+discordClient.initialize('Debank Portfolio')
+  .then(initialized => {
+    if (!initialized) {
+      console.warn('Discord client failed to initialize. Notifications will be logged to console only.');
+    }
+    return main();
+  })
+  .catch(e => {
+    console.error(e);
+    discordClient.notify(e.message);
+  })
+  .finally(() => {
+    discordClient.destroy();
+  });
